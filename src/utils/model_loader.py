@@ -255,7 +255,7 @@ def download_all_models():
     for model_name in MODEL_NAMES:
         try:
             path = get_model_path(model_name)
-            print(f"  ✓ {model_name}")
+            print(f"  [OK] {model_name}")
         except Exception as e:
-            print(f"  ✗ {model_name}: {e}")
+            print(f"  [FAIL] {model_name}: {e}")
     print("Done!")
