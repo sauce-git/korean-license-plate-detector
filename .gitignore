@@ -1,0 +1,32 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temp data
+temp_data/
+
+# Build
+build/
+dist/
+.cache/
+
+# Environment
+.env
+
+*.jpg
+*.jpeg
+*.png
