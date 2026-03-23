@@ -82,6 +82,7 @@ class MainWindow(QMainWindow):
         self.window.chooseFile.clicked.connect(self.choose_file)
         self.window.execute.clicked.connect(self.execute)
         self.window.confirm.clicked.connect(self.confirm)
+        self.window.closeBtn.clicked.connect(self.close_app)
         self.local_event_loop = QEventLoop()
 
         window.setWindowTitle("")
@@ -156,6 +157,9 @@ class MainWindow(QMainWindow):
         self.window.car_num.setText("")
         self.window.label.setText(self.car_num)
         self.local_event_loop.exit()
+
+    def close_app(self):
+        QApplication.quit()
 
     def set_image(self, img):
         img_name = img.split('/')[-1]

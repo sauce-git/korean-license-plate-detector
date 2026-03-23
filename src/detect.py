@@ -76,7 +76,7 @@ def get_num(img, save=False, save_not_detected=False, save_path='./temp_data/',
         res2 = None
         debug_print("No warped image, res2 = None")
 
-    result = confirm_num(res1, res2)  # return the number that is confirmed to be the license plate number
+    result = confirm_num(res1, res2, mask=False)  # return full plate number with Korean region
     debug_print(f"Final result: {result}")
 
     if save:
