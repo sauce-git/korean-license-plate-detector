@@ -36,12 +36,17 @@ flowchart LR
 
 ## 📥 설치
 
-### 요구사항
+### 릴리즈 다운로드 (권장)
 
-- Python 3.11+
-- OS: Linux, macOS, Windows
+[최신 릴리즈](https://github.com/sauce-git/korean-license-plate-detector/releases/latest)에서 OS에 맞는 파일을 다운로드하세요.
 
-### 빠른 시작
+- 🐧 **Linux**: `korean-license-plate-detector-linux.tar.gz`
+- 🍎 **macOS**: `korean-license-plate-detector-macos.tar.gz`
+- 🪟 **Windows**: `korean-license-plate-detector-windows.zip`
+
+압축 해제 후 실행 파일을 바로 사용할 수 있습니다. Python 설치 불필요.
+
+### 소스에서 설치
 
 ```bash
 # 저장소 클론
