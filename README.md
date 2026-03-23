@@ -1,16 +1,16 @@
-# 🚗 한국어 번호판 인식기
+# 한국어 번호판 인식기
 
 한국어 자동차 번호판 검출 및 인식 시스템 (ONNX Runtime 기반)
 
-## ✨ 주요 기능
+## 주요 기능
 
-- 🔍 **번호판 검출** - 차량 이미지에서 번호판 영역 검출
-- 📐 **원근 보정** - 번호판 모서리 검출 및 이미지 변형 보정
-- 🔤 **문자 검출** - 한글 및 숫자 문자 검출 (YOLO 기반)
-- 🖥️ **GUI 애플리케이션** - 사용하기 쉬운 데스크톱 인터페이스
-- 📦 **독립 실행 파일** - 최종 사용자를 위해 Python 설치 불필요
+- **번호판 검출** - 차량 이미지에서 번호판 영역 검출
+- **원근 보정** - 번호판 모서리 검출 및 이미지 변형 보정
+- **문자 검출** - 한글 및 숫자 문자 검출 (YOLO 기반)
+- **GUI 애플리케이션** - 사용하기 쉬운 데스크톱 인터페이스
+- **독립 실행 파일** - 최종 사용자를 위해 Python 설치 불필요
 
-## 🛠️ 동작 원리
+## 동작 원리
 
 ```mermaid
 flowchart LR
@@ -34,15 +34,15 @@ flowchart LR
 - **찌그러진 번호판** - 사고로 변형된 번호판에서 문자 간격이 불규칙해도 각 문자를 독립적으로 검출
 - **부분 가려짐** - 일부 문자가 가려진 경우에도 보이는 문자만 검출하여 결과 반환
 
-## 📥 설치
+## 설치
 
 ### 릴리즈 다운로드 (권장)
 
 [최신 릴리즈](https://github.com/sauce-git/korean-license-plate-detector/releases/latest)에서 OS에 맞는 파일을 다운로드하세요.
 
-- 🐧 **Linux**: `korean-license-plate-detector-linux.tar.gz`
-- 🍎 **macOS**: `korean-license-plate-detector-macos.tar.gz`
-- 🪟 **Windows**: `korean-license-plate-detector-windows.zip`
+- **Linux**: `korean-license-plate-detector-linux.tar.gz`
+- **macOS**: `korean-license-plate-detector-macos.tar.gz`
+- **Windows**: `korean-license-plate-detector-windows.zip`
 
 압축 해제 후 실행 파일을 바로 사용할 수 있습니다. Python 설치 불필요.
 
@@ -60,7 +60,7 @@ make install
 make run
 ```
 
-## 🚀 사용법
+## 사용법
 
 ### GUI 애플리케이션
 
@@ -109,11 +109,11 @@ git push --tags
 ```
 
 다음 플랫폼용 릴리즈가 생성됩니다:
-- 🐧 Linux (tar.gz)
-- 🍎 macOS (tar.gz)
-- 🪟 Windows (zip)
+- Linux (tar.gz)
+- macOS (tar.gz)
+- Windows (zip)
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 app/
@@ -130,7 +130,7 @@ app/
 └── requirements.txt       # 의존성
 ```
 
-## 🧠 모델
+## 모델
 
 모델은 Hugging Face에서 자동으로 다운로드됩니다:
 - **저장소**: [sauce-hug/korean-license-plate-detector](https://huggingface.co/sauce-hug/korean-license-plate-detector)
@@ -148,7 +148,7 @@ export HF_MODEL_REPO=your-username/your-model-repo
 make build
 ```
 
-## ⚙️ 설정
+## 설정
 
 | 환경 변수 | 설명 | 기본값 |
 |----------|------|--------|
@@ -161,7 +161,7 @@ make build
 HF_MODEL_REPO=sauce-hug/korean-license-plate-detector
 ```
 
-## 🧪 학습
+## 학습
 
 학습 노트북은 `train/` 디렉토리에 있습니다:
 
@@ -169,6 +169,6 @@ HF_MODEL_REPO=sauce-hug/korean-license-plate-detector
 - `train_vertex_detector.ipynb` - 모서리 검출 모델 학습
 - `train_text_detector.ipynb` - 문자 검출 모델 학습
 
-## 📄 라이센스
+## 라이센스
 
 이 프로젝트는 Apache License 2.0으로 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
