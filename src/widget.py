@@ -1,13 +1,24 @@
-# This Python file uses the following encoding: utf-8
-# This module is for the main window of the program
+# -*- coding: utf-8 -*-
+# Main window module
 
-import os.path
+import os
 import sys
-from glob import glob
+import argparse
 
+# Parse debug argument FIRST before any other imports
+parser = argparse.ArgumentParser(add_help=False)
+parser.add_argument('--debug', action='store_true', help='Enable debug mode')
+args, _ = parser.parse_known_args()
+
+# Set debug environment variable BEFORE importing other modules
+if args.debug:
+    os.environ['DEBUG'] = '1'
+    print("[DEBUG] Debug mode enabled", file=sys.stderr, flush=True)
+
+from glob import glob
 import cv2
 from PySide6 import QtGui
-from PySide6.QtCore import QFile, QIODevice, QThread, QEventLoop, SIGNAL, Qt
+from PySide6.QtCore import QFile, QIODevice, QThread, QEventLoop, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow
@@ -16,6 +27,13 @@ from openpyxl.workbook import Workbook
 from detect import get_num
 
 title = "Number Detector"
+
+
+def get_resource_path(relative_path):
+    """Get path to resource, works in dev and PyInstaller bundle"""
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(__file__), relative_path)
 
 
 def remake_dir_path(path):
@@ -44,7 +62,7 @@ class Worker(QThread):
         self.img_list = img_list
 
     def run(self):
-        self.emit(SIGNAL(self.convert_dir_to_num_list(self.img_list)))
+        self.convert_dir_to_num_list(self.img_list)
 
 
 class MainWindow(QMainWindow):
@@ -64,11 +82,13 @@ class MainWindow(QMainWindow):
         self.window.chooseFile.clicked.connect(self.choose_file)
         self.window.execute.clicked.connect(self.execute)
         self.window.confirm.clicked.connect(self.confirm)
+        self.window.closeBtn.clicked.connect(self.close_app)
         self.local_event_loop = QEventLoop()
 
         window.setWindowTitle("")
 
-        app_icon = QtGui.QIcon('./utils/icons/dobby.ico')
+        icon_path = get_resource_path('utils/icons/dobby.ico')
+        app_icon = QtGui.QIcon(icon_path)
         window.setWindowIcon(app_icon)
 
         self.window.label.setText("경로를 선택해주세요")
@@ -88,18 +108,15 @@ class MainWindow(QMainWindow):
             self.set_image(self.img_list[0])
 
         self.file = ""
-
         self.dir = remake_dir_path(dir)
-
         self.window.progressBar.setValue(0)
 
     def choose_file(self):
         file = QFileDialog.getOpenFileName(self.window, "Select File")
         self.set_image(file[0])
-        self.window.label.setText("이미지 파일을 찾았습니다(%s개). \n\n변환을 눌러주세요" % (len(self.img_list)))
+        self.window.label.setText("이미지 파일을 찾았습니다(%s개). \n\n변환을 눌러주세요" % (len(self.img_list) if self.img_list else 1))
         self.dir = ""
         self.file = file[0]
-
         self.window.progressBar.setValue(0)
 
     def execute(self):
@@ -107,8 +124,9 @@ class MainWindow(QMainWindow):
 
         if self.dir:
             self.worker = Worker(self.convert_dir_to_num_list, self.img_list)
+            self.worker.finished.connect(self.on_worker_finished)
             self.worker.start()
-            self.local_event_loop.exec()  # Wait for the thread to finish
+            self.local_event_loop.exec()
 
             for idx in range(len(self.result)):
                 if self.result[idx] is None:
@@ -120,7 +138,6 @@ class MainWindow(QMainWindow):
                     self.car_num = None
 
             self.window.label.setText("처리중...")
-
             save_result(self.result, save_path=self.dir, save_name='result')
             self.window.label.setText("완료! 결과는 \n" + self.dir + "result.xlsx \n파일을 확인해주세요")
 
@@ -132,28 +149,35 @@ class MainWindow(QMainWindow):
         else:
             self.window.label.setText("경로를 선택해주세요")
 
+    def on_worker_finished(self):
+        self.local_event_loop.exit()
+
     def confirm(self):
         self.car_num = self.window.car_num.text()
         self.window.car_num.setText("")
         self.window.label.setText(self.car_num)
         self.local_event_loop.exit()
 
+    def close_app(self):
+        QApplication.quit()
+
     def set_image(self, img):
         img_name = img.split('/')[-1]
-        if os.path.isfile('temp_data/' + img_name):  # check temp data is available
+        if os.path.isfile('temp_data/' + img_name):
             img = 'temp_data/' + img_name
 
-        self.window.Image.setPixmap(QPixmap(img).scaled(self.window.Image.width(),
-                                                        self.window.Image.height(),
-                                                        Qt.KeepAspectRatio))
+        self.window.Image.setPixmap(QPixmap(img).scaled(
+            self.window.Image.width(),
+            self.window.Image.height(),
+            Qt.KeepAspectRatio
+        ))
 
-    def convert_dir_to_num_list(self, img_list=None):  # convert image list to number list
+    def convert_dir_to_num_list(self, img_list=None):
         result = []
 
         for img_path in img_list:
             print(img_path)
             img = cv2.imread(img_path)
-
             plate_num = get_num(img=img, save_not_detected=True, save_name=img_path)
 
             if plate_num is not None:
@@ -161,23 +185,21 @@ class MainWindow(QMainWindow):
             else:
                 result.append(None)
 
-            self.window.progressBar.setValue((img_list.index(img_path) + 1) / len(img_list) * 100)
+            self.window.progressBar.setValue(int((img_list.index(img_path) + 1) / len(img_list) * 100))
 
         self.result = result
-        self.local_event_loop.exit()  # exit local event loop
 
 
 if __name__ == "__main__":
-
     app = QApplication(sys.argv)
 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    ui_file_name = os.path.join(dir_path, "form.ui")
-    ui_file = QFile(ui_file_name)
+    ui_file_path = get_resource_path("form.ui")
+    ui_file = QFile(ui_file_path)
 
     if not ui_file.open(QIODevice.ReadOnly):
-        print("Cannot open {}: {}".format(ui_file_name, ui_file.errorString()))
+        print("Cannot open {}: {}".format(ui_file_path, ui_file.errorString()))
         sys.exit(-1)
+
     loader = QUiLoader()
     window = loader.load(ui_file)
     ui_file.close()
