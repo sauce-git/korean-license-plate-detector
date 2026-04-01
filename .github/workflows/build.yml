@@ -29,18 +29,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -e .
 
       - name: Download models
         run: |
-          python -c "import sys; sys.path.insert(0, 'src'); from utils.model_loader import download_all_models; download_all_models()"
+          python -c "from klpd.models import download_all_models; download_all_models()"
 
       - name: Build
         run: python -m PyInstaller korean-license-plate-detector.spec --noconfirm
-
-      - name: Apply ad-hoc signature (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          codesign --force --deep --sign - dist/korean-license-plate-detector/korean-license-plate-detector
 
       - name: Verify build
         run: test -f dist/korean-license-plate-detector/korean-license-plate-detector
