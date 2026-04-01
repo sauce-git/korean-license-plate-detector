@@ -8,6 +8,13 @@ import onnxruntime as ort
 import logging
 from pathlib import Path
 
+# Limit threading to avoid issues with QThread in PyInstaller
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+
 # Setup logging - always set to INFO level to allow logs to propagate
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -82,7 +89,17 @@ class ONNXModel:
         self.model_path = str(model_path)
         logger.info(f"Loading ONNX model from: {self.model_path}")
         try:
-            self.session = ort.InferenceSession(self.model_path, providers=['CPUExecutionProvider'])
+            # Set single-threaded execution to avoid issues with QThread in PyInstaller
+            so = ort.SessionOptions()
+            so.intra_op_num_threads = 1
+            so.inter_op_num_threads = 1
+            so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+
+            self.session = ort.InferenceSession(
+                self.model_path,
+                providers=['CPUExecutionProvider'],
+                sess_options=so
+            )
             self.input_name = self.session.get_inputs()[0].name
             self.input_shape = self.session.get_inputs()[0].shape
             self.input_size = self.input_shape[2] if len(self.input_shape) == 4 else 416
@@ -243,6 +260,14 @@ class YOLOBox:
     @property
     def conf(self):
         return self._conf
+
+    def center_x(self):
+        """Get center x coordinate directly (for PyInstaller compatibility)"""
+        return float(self._xywh[0])
+
+    def center_y(self):
+        """Get center y coordinate directly (for PyInstaller compatibility)"""
+        return float(self._xywh[1])
 
 
 class ArrayWrapper:

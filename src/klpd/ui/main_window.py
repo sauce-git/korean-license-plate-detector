@@ -66,7 +66,7 @@ if args.debug:
 from glob import glob
 import cv2
 from PySide6 import QtGui
-from PySide6.QtCore import QFile, QIODevice, QThread, QEventLoop, Qt
+from PySide6.QtCore import QFile, QIODevice, QThread, QEventLoop, Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow
@@ -81,8 +81,9 @@ title = "Number Detector"
 def get_resource_path(relative_path):
     """Get path to resource, works in dev and PyInstaller bundle"""
     if getattr(sys, 'frozen', False):
-        return os.path.join(sys._MEIPASS, relative_path)
-    # Resources are in the 'resources' subdirectory
+        # In PyInstaller bundle, resources are at klpd/ui/resources/
+        return os.path.join(sys._MEIPASS, 'klpd', 'ui', 'resources', relative_path)
+    # In development, resources are in the 'resources' subdirectory
     return os.path.join(os.path.dirname(__file__), 'resources', relative_path)
 
 
@@ -106,13 +107,25 @@ def save_result(result, save_path='temp_data/', save_name='result'):
 
 
 class Worker(QThread):
+    """Worker thread for processing images in background"""
+    finished = Signal()
+    progress = Signal(int)
+
     def __init__(self, convert_dir_to_num_list, img_list):
         super().__init__()
         self.convert_dir_to_num_list = convert_dir_to_num_list
         self.img_list = img_list
+        self.result = []
 
     def run(self):
-        self.convert_dir_to_num_list(self.img_list)
+        try:
+            self.result = self.convert_dir_to_num_list(self.img_list, self.progress)
+        except Exception as e:
+            import logging
+            logging.error(f"Worker error: {e}", exc_info=True)
+            self.result = []
+        finally:
+            self.finished.emit()
 
 
 class MainWindow(QMainWindow):
@@ -141,7 +154,7 @@ class MainWindow(QMainWindow):
 
         window.setWindowTitle("")
 
-        icon_path = get_resource_path('utils/icons/dobby.ico')
+        icon_path = get_resource_path('icons/dobby.ico')
         app_icon = QtGui.QIcon(icon_path)
         self.setWindowIcon(app_icon)
 
@@ -269,10 +282,29 @@ class MainWindow(QMainWindow):
         self.window.label.setText("실행중입니다")
 
         if self.dir:
+            # Pre-load models in main thread before starting worker
+            from klpd.models import get_plate_detector, get_vertex_detector, get_syllable_detector
+            import logging
+
+            try:
+                logging.info("Pre-loading models...")
+                get_plate_detector()
+                get_vertex_detector()
+                get_syllable_detector()
+                logging.info("Models loaded successfully")
+            except Exception as e:
+                logging.error(f"Failed to load models: {e}", exc_info=True)
+                self.window.label.setText(f"모델 로딩 실패: {e}")
+                return
+
             self.worker = Worker(self.convert_dir_to_num_list, self.img_list)
             self.worker.finished.connect(self.on_worker_finished)
+            self.worker.progress.connect(self.window.progressBar.setValue)
             self.worker.start()
             self.local_event_loop.exec()
+
+            # Get result from worker
+            self.result = self.worker.result
 
             for idx in range(len(self.result)):
                 if self.result[idx] is None:
@@ -318,22 +350,36 @@ class MainWindow(QMainWindow):
             Qt.KeepAspectRatio
         ))
 
-    def convert_dir_to_num_list(self, img_list=None):
+    def convert_dir_to_num_list(self, img_list=None, progress_signal=None):
         result = []
 
-        for img_path in img_list:
-            print(img_path)
-            img = cv2.imread(img_path)
-            plate_num = get_num(img=img, save_not_detected=True, save_name=img_path)
+        for i, img_path in enumerate(img_list):
+            # Use logging instead of print for PyInstaller compatibility
+            import logging
+            logging.info(f"Processing: {img_path}")
 
-            if plate_num is not None:
-                result.append(plate_num)
-            else:
+            try:
+                img = cv2.imread(img_path)
+                if img is None:
+                    logging.warning(f"Failed to read image: {img_path}")
+                    result.append(None)
+                    continue
+
+                plate_num = get_num(img=img, save_not_detected=True, save_name=img_path)
+
+                if plate_num is not None:
+                    result.append(plate_num)
+                else:
+                    result.append(None)
+            except Exception as e:
+                logging.error(f"Error processing {img_path}: {e}", exc_info=True)
                 result.append(None)
 
-            self.window.progressBar.setValue(int((img_list.index(img_path) + 1) / len(img_list) * 100))
+            # Emit progress signal instead of direct UI update
+            if progress_signal:
+                progress_signal.emit(int((i + 1) / len(img_list) * 100))
 
-        self.result = result
+        return result
 
 
 def main():

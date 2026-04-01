@@ -17,6 +17,7 @@ cache_dir = os.environ.get('HF_MODEL_CACHE', '.cache')
 # Data files to include from src/
 datas = [
     ('src/klpd/ui/resources/form.ui', 'klpd/ui/resources'),
+    ('src/klpd/ui/resources/icons/dobby.ico', 'klpd/ui/resources/icons'),
     ('src/klpd/utils/data/kor_list.txt', 'klpd/utils/data'),
     ('src/klpd/utils/data/plate_list.txt', 'klpd/utils/data'),
 ]
@@ -74,12 +75,12 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,  # Disable UPX to avoid code signing issues
     console=False,  # GUI app, logs go to file
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
-    codesign_identity='-' if is_macos else None,  # Ad-hoc signing for macOS
+    codesign_identity=None,  # No code signing during build
     entitlements_file=None,
 )
 

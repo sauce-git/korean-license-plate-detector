@@ -81,17 +81,21 @@ def sort_num(boxes):
         return None
 
     # Apply NMS first
+    debug_print(f"About to call NMS with {len(boxes)} boxes")
     keep_indices = nms(list(boxes), iou_threshold=0.3)
     debug_print(f"NMS: {len(boxes)} boxes -> {len(keep_indices)} boxes")
 
     if len(keep_indices) == 0:
+        debug_print("No boxes after NMS, returning None")
         return None
 
-    # Filter boxes
+    # Filter boxes - this is where it might freeze in PyInstaller
+    debug_print(f"About to filter boxes, keep_indices: {keep_indices[:3]}...")
     filtered_boxes = [boxes[i] for i in keep_indices]
+    debug_print(f"Filtered boxes count: {len(filtered_boxes)}")
 
     # Get min/max by x position
-    x_positions = [b.xywh.tolist()[0][0] for b in filtered_boxes]
+    x_positions = [b.center_x() for b in filtered_boxes]
     max_idx = x_positions.index(max(x_positions))
     min_idx = x_positions.index(min(x_positions))
 
@@ -102,6 +106,7 @@ def sort_num(boxes):
     x2, y2 = min_box.xywh.tolist()[0][:2]
 
     line = get_linear(x1, y1, x2, y2)
+    debug_print(f"Line equation: y={x1}x+{y1}")
 
     box_on_line = []
     rest = []
@@ -112,16 +117,39 @@ def sort_num(boxes):
         else:
             rest.append(box)
 
-    box_on_line.sort(key=lambda x: x.xywh[0][0])
-    rest.sort(key=lambda x: x.xywh[0][0])
+    debug_print(f"Boxes on line: {len(box_on_line)}, Rest: {len(rest)}")
+
+    debug_print("About to sort box_on_line...")
+    try:
+        box_on_line.sort(key=lambda x: x.center_x())
+        debug_print("box_on_line sorted")
+    except Exception as e:
+        debug_print(f"Error sorting box_on_line: {e}")
+        raise
+
+    debug_print("About to sort rest...")
+    try:
+        rest.sort(key=lambda x: x.center_x())
+        debug_print("rest sorted")
+    except Exception as e:
+        debug_print(f"Error sorting rest: {e}")
+        raise
 
     plate_num = ''
 
-    for box in rest:
-        plate_num += kor_list[int(box.cls)]
+    debug_print(f"Processing {len(rest)} rest boxes...")
+    for i, box in enumerate(rest):
+        cls_val = int(box.cls)
+        debug_print(f"Rest box {i}: cls={cls_val}")
+        if 0 <= cls_val < len(kor_list):
+            plate_num += kor_list[cls_val]
 
-    for box in box_on_line:
-        plate_num += kor_list[int(box.cls)]
+    debug_print(f"Processing {len(box_on_line)} boxes on line...")
+    for i, box in enumerate(box_on_line):
+        cls_val = int(box.cls)
+        debug_print(f"Box on line {i}: cls={cls_val}")
+        if 0 <= cls_val < len(kor_list):
+            plate_num += kor_list[cls_val]
 
     debug_print(f"Detected plate number (before formatting): {plate_num}")
 
@@ -140,7 +168,8 @@ def sort_num(boxes):
 
 
 def max_min_idx(boxes):
-    boxes_x = list(list(zip(*boxes.xywhn.tolist()))[0])
+    # Use center_x() for PyInstaller compatibility
+    boxes_x = [b.center_x() for b in boxes]
     boxes_rank = boxes_x.copy()
     boxes_rank.sort()
     max_idx = boxes_x.index(boxes_rank[-1])
