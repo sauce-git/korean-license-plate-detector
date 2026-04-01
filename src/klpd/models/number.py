@@ -1,8 +1,8 @@
 # This module is for detecting number in the image and returning the ordered number
 
 import numpy as np
-from utils.data_loader import load_kor_list
-from utils.debug import debug_print
+from klpd.utils.data_loader import load_kor_list
+from klpd.utils import debug_print
 
 kor_list = load_kor_list()
 

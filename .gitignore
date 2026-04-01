@@ -10,6 +10,14 @@ venv/
 .venv/
 env/
 
+# Build & packaging
+build/
+dist/
+.cache/
+*.egg-info/
+.eggs/
+*.egg
+
 # IDE
 .idea/
 .vscode/
@@ -19,15 +27,16 @@ env/
 # Temp data
 temp_data/
 
-# Build
-build/
-dist/
-.cache/
-
 # Environment
 .env
 
-*.jpg
-*.jpeg
-*.png
 .tools/
+
+# Test images (comment out if needed for testing)
+# *.jpg
+# *.jpeg
+# *.png
+
+# Logs
+*.log
+

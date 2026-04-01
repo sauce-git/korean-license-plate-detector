@@ -1,6 +1,6 @@
 # This file contains the class for detecting and cropping the license plate from the image
 
-from utils.debug import debug_print
+from klpd.utils import debug_print
 
 
 def crop_img(img, result):

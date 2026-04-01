@@ -73,7 +73,7 @@ from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow
 from PySide6.QtGui import QAction
 from openpyxl.workbook import Workbook
 
-from detector import get_num
+from klpd.detector import get_num
 
 title = "Number Detector"
 
@@ -82,7 +82,8 @@ def get_resource_path(relative_path):
     """Get path to resource, works in dev and PyInstaller bundle"""
     if getattr(sys, 'frozen', False):
         return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.dirname(__file__), relative_path)
+    # Resources are in the 'resources' subdirectory
+    return os.path.join(os.path.dirname(__file__), 'resources', relative_path)
 
 
 def remake_dir_path(path):
@@ -183,7 +184,7 @@ class MainWindow(QMainWindow):
         self.debug_mode = checked
 
         # Update debug state using the Debug singleton
-        from utils.debug import debug
+        from klpd.utils import debug
         debug.enabled = checked
 
         # Update logging level for both file and console handlers
@@ -335,7 +336,8 @@ class MainWindow(QMainWindow):
         self.result = result
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the UI"""
     # Setup error logging for frozen executables
     import traceback
     if getattr(sys, 'frozen', False):
@@ -368,3 +370,7 @@ if __name__ == "__main__":
     main_window.show()
 
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

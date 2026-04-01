@@ -4,7 +4,7 @@
 import re
 import cv2
 from .models import get_plate_detector, get_vertex_detector, get_syllable_detector
-from utils.debug import debug_print, info_print
+from klpd.utils import debug_print, info_print
 
 # Regex patterns
 PLATE_REGEX = r'([가-힣]{2}[0-9]{2}[가-힣]{1}[0-9]{4})|([0-9]{2,3}[가-힣]{1}[0-9]{4})'

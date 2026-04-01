@@ -1,4 +1,4 @@
-.PHONY: all install build run clean clean-all
+.PHONY: all install build run clean clean-all test
 
 # Load .env file
 ifneq (,$(wildcard ./.env))
@@ -22,6 +22,7 @@ TOOLS_DIR := .tools
 
 # Source directory
 SRC_DIR := src
+PKG_NAME := klpd
 
 # Detect OS and architecture
 UNAME_S := $(shell uname -s)
@@ -66,10 +67,11 @@ venv: $(PYTHON_BIN)
 install: venv
 	$(PIP) install --upgrade pip -q
 	$(PIP) install -r requirements.txt
+	$(PIP) install -e .
 
 download-models: install
 	HF_MODEL_REPO=$(HF_MODEL_REPO) HF_MODEL_CACHE=$(CACHE_DIR) \
-		$(PYTHON) -c "import sys; sys.path.insert(0, 'src'); from utils.model_loader import download_all_models; download_all_models()"
+		$(PYTHON) -c "from klpd.models import download_all_models; download_all_models()"
 
 build: install download-models
 	@echo "Building for $(UNAME_S)..."
@@ -81,11 +83,19 @@ build: install download-models
 
 run: install
 	HF_MODEL_REPO=$(HF_MODEL_REPO) HF_MODEL_CACHE=$(CACHE_DIR) \
-		PYTHONPATH=$(SRC_DIR) $(PYTHON) $(SRC_DIR)/widget.py
+		$(PYTHON) -m klpd.cli
+
+run-debug: install
+	HF_MODEL_REPO=$(HF_MODEL_REPO) HF_MODEL_CACHE=$(CACHE_DIR) \
+		$(PYTHON) -m klpd.cli --debug
+
+test: install
+	$(PYTHON) -m pytest tests/ -v
 
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR) $(CACHE_DIR)
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 
 clean-all: clean
 	rm -rf $(VENV) $(TOOLS_DIR)
@@ -94,10 +104,12 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  build      - Build executable (downloads Python and models if needed)"
-	@echo "  run        - Run the app"
-	@echo "  clean      - Remove build artifacts and cache"
-	@echo "  clean-all  - Remove venv, tools, and all build artifacts"
+	@echo "  build       - Build executable (downloads Python and models if needed)"
+	@echo "  run         - Run the app"
+	@echo "  run-debug   - Run the app with debug mode enabled"
+	@echo "  test        - Run tests"
+	@echo "  clean       - Remove build artifacts and cache"
+	@echo "  clean-all   - Remove venv, tools, and all build artifacts"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  HF_MODEL_REPO=$(HF_MODEL_REPO)"

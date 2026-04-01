@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # Debug mode and debug_print from common module
-from utils.debug import debug_print, is_debug_enabled, info_print
+from klpd.utils import debug_print, is_debug_enabled, info_print
 
 if is_debug_enabled():
     logger.debug("DEBUG mode enabled")

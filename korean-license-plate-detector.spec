@@ -16,9 +16,8 @@ cache_dir = os.environ.get('HF_MODEL_CACHE', '.cache')
 
 # Data files to include from src/
 datas = [
-    ('src/form.ui', '.'),
-    ('src/utils/data', 'utils/data'),
-    ('src/utils/icons', 'utils/icons'),
+    ('src/klpd/ui/resources/form.ui', 'klpd/ui/resources'),
+    ('src/klpd/utils/data', 'klpd/utils/data'),
 ]
 
 # Include cached models if they exist
@@ -37,10 +36,14 @@ hiddenimports = [
     'openpyxl',
     'huggingface_hub',
     'huggingface_hub.file_download',
+    'klpd',
+    'klpd.detector',
+    'klpd.models',
+    'klpd.utils',
 ]
 
 a = Analysis(
-    ['src/widget.py'],
+    ['src/klpd/cli.py'],
     pathex=['src/'],
     binaries=[],
     datas=datas,

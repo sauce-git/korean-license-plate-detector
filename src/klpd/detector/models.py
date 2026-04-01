@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 # Model instances and initialization
 
-from utils.debug import debug_print, info_print
-from utils.model_loader import load_model
-from utils.plate_detector import DetectPlate
-from utils.plate_warper import WarpPlate
-from utils.number_detector import DetectNumber
+from klpd.utils import debug_print, info_print
+from klpd.models import load_model, DetectPlate, WarpPlate, DetectNumber
 
 # Model names
 PLATE_DETECT_MODEL = "plate_detect_v1"
