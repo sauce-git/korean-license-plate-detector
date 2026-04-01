@@ -7,6 +7,10 @@ from pathlib import Path
 
 block_cipher = None
 
+# Detect platform for platform-specific settings
+is_macos = sys.platform == 'darwin'
+is_windows = sys.platform == 'win32'
+
 # Get cache directory
 cache_dir = os.environ.get('HF_MODEL_CACHE', '.cache')
 
@@ -68,11 +72,11 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=False,  # Set to True for debugging
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
-    codesign_identity=None,
+    codesign_identity='-' if is_macos else None,  # Ad-hoc signing for macOS
     entitlements_file=None,
 )
 

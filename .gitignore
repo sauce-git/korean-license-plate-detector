@@ -30,3 +30,4 @@ dist/
 *.jpg
 *.jpeg
 *.png
+.tools/

@@ -46,6 +46,29 @@ flowchart LR
 
 압축 해제 후 실행 파일을 바로 사용할 수 있습니다. Python 설치 불필요.
 
+#### macOS 실행 시 주의사항
+
+macOS에서 "손상된 파일" 경고가 뜰 경우:
+
+```bash
+# 압축 해제 후 실행 파일이 있는 디렉토리에서
+xattr -cr korean-license-plate-detector
+./korean-license-plate-detector/korean-license-plate-detector
+```
+
+또는:
+1. 우클릭 → "열기" 선택
+2. "열기" 버튼 클릭
+
+#### Windows 실행 시 주의사항
+
+실행 시 아무 반응이 없으면 터미널에서 디버그 모드로 실행해 에러를 확인하세요:
+
+```cmd
+cd korean-license-plate-detector
+korean-license-plate-detector.exe --debug
+```
+
 ### 소스에서 설치
 
 ```bash

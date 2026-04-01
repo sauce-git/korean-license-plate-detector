@@ -191,6 +191,17 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
+    # Setup error logging for frozen executables
+    import traceback
+    if getattr(sys, 'frozen', False):
+        log_path = os.path.join(os.path.expanduser('~'), 'korean-license-plate-detector-error.log')
+        original_excepthook = sys.excepthook
+        def custom_excepthook(exc_type, exc_value, exc_traceback):
+            with open(log_path, 'w') as f:
+                f.write(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+            original_excepthook(exc_type, exc_value, exc_traceback)
+        sys.excepthook = custom_excepthook
+
     app = QApplication(sys.argv)
 
     ui_file_path = get_resource_path("form.ui")

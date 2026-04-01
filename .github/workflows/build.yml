@@ -35,5 +35,10 @@ jobs:
       - name: Build
         run: python -m PyInstaller korean-license-plate-detector.spec --noconfirm
 
+      - name: Apply ad-hoc signature (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          codesign --force --deep --sign - dist/korean-license-plate-detector/korean-license-plate-detector
+
       - name: Verify build
         run: test -f dist/korean-license-plate-detector/korean-license-plate-detector
