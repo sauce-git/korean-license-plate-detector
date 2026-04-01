@@ -8,6 +8,8 @@ on:
 
 env:
   HF_MODEL_REPO: sauce-hug/korean-license-plate-detector
+  HF_MODEL_CACHE: .cache
+  HF_HUB_CACHE: .cache/huggingface
 
 jobs:
   build:

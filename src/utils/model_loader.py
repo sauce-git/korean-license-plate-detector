@@ -39,7 +39,8 @@ def download_model_from_hf(model_name: str, cache_dir: Path) -> Path:
     model_path = hf_hub_download(
         repo_id=HF_MODEL_REPO,
         filename=model_filename,
-        local_dir=local_dir
+        local_dir=local_dir,
+        local_dir_use_symlinks=False  # Ensure actual files, not symlinks
     )
     return Path(model_path)
 

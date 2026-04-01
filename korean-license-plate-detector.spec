@@ -37,7 +37,6 @@ hiddenimports = [
     'openpyxl',
     'huggingface_hub',
     'huggingface_hub.file_download',
-    'huggingface_hub hf_api',
 ]
 
 a = Analysis(
