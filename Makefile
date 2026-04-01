@@ -1,4 +1,4 @@
-.PHONY: all install build release run run-debug test clean clean-all help
+.PHONY: all install build run run-debug test clean clean-all help
 
 # Load .env file
 ifneq (,$(wildcard ./.env))
@@ -76,24 +76,12 @@ download-models: install
 build: install download-models
 	@echo "Building for $(UNAME_S)..."
 	@echo "Model repo: $(HF_MODEL_REPO)"
+	rm -rf $(BUILD_DIR) $(DIST_DIR)
 	HF_MODEL_REPO=$(HF_MODEL_REPO) HF_MODEL_CACHE=$(CACHE_DIR) \
 		$(PYTHON) -m PyInstaller korean-license-plate-detector.spec --noconfirm
 	@echo ""
-	@echo "Build complete: $(DIST_DIR)/korean-license-plate-detector/"
-
-release: install download-models
-	@echo "Building release for $(UNAME_S)..."
-	@echo "Model repo: $(HF_MODEL_REPO)"
-	rm -rf $(BUILD_DIR) $(DIST_DIR)
-	HF_MODEL_REPO=$(HF_MODEL_REPO) HF_MODEL_CACHE=$(CACHE_DIR) \
-		$(PYTHON) -m PyInstaller korean-license-plate-detector.spec --noconfirm --clean
-	@echo ""
-	@echo "Applying ad-hoc code signing..."
-	-codesign --remove-signature "$(DIST_DIR)/korean-license-plate-detector/korean-license-plate-detector"
-	codesign --force --deep -s - "$(DIST_DIR)/korean-license-plate-detector/korean-license-plate-detector"
-	@echo ""
-	@echo "Release build complete: $(DIST_DIR)/korean-license-plate-detector/"
-	@ls -la $(DIST_DIR)/korean-license-plate-detector/
+	@echo "Build complete: $(DIST_DIR)/"
+	@ls -la $(DIST_DIR)/
 
 run: install
 	HF_MODEL_REPO=$(HF_MODEL_REPO) HF_MODEL_CACHE=$(CACHE_DIR) \
@@ -104,6 +92,8 @@ run-debug: install
 		$(PYTHON) -m klpd.cli --debug
 
 test: install
+	@echo "Checking for pytest..."
+	@$(PYTHON) -m pip install pytest -q
 	$(PYTHON) -m pytest tests/ -v
 
 clean:
@@ -119,7 +109,6 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  build       - Build executable (downloads Python and models if needed)"
-	@echo "  release     - Clean build release executable"
 	@echo "  run         - Run the app"
 	@echo "  run-debug   - Run the app with debug mode enabled"
 	@echo "  test        - Run tests"

@@ -3,6 +3,7 @@
 
 import re
 import cv2
+import numpy as np
 from .models import get_plate_detector, get_vertex_detector, get_syllable_detector
 from klpd.utils import debug_print, info_print
 
@@ -63,6 +64,14 @@ def get_num(img, save=False, save_not_detected=False, save_path='./temp_data/',
         Detected license plate number or None
     """
     debug_print(f"get_num called with image shape: {img.shape if img is not None else None}")
+
+    # Input validation
+    if img is None:
+        debug_print("Image is None, returning None")
+        return None
+    if not isinstance(img, np.ndarray) or img.size == 0:
+        debug_print("Image is empty or invalid, returning None")
+        return None
 
     # Normalize save path
     if not save_path.endswith('/'):

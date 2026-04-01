@@ -321,7 +321,10 @@ class MainWindow(QMainWindow):
             self.window.label.setText("완료! 결과는 \n" + self.dir + "result.xlsx \n파일을 확인해주세요")
 
         elif self.file:
-            img = cv2.imread(self.file)
+            # cv2.imread fails with non-ASCII paths on Windows, use imdecode instead
+            with open(self.file, 'rb') as f:
+                img_array = np.frombuffer(f.read(), dtype=np.uint8)
+            img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
             self.window.label.setText("완료!\n\n%s" % (get_num(img)))
             self.window.progressBar.setValue(100)
 

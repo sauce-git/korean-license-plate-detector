@@ -11,6 +11,9 @@ block_cipher = None
 is_macos = sys.platform == 'darwin'
 is_windows = sys.platform == 'win32'
 
+# Use onefile for Windows, onedir for Linux/macOS
+is_onefile = is_windows
+
 # Get cache directory
 cache_dir = os.environ.get('HF_MODEL_CACHE', '.cache')
 
@@ -69,8 +72,11 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries if is_onefile else [],
+    a.zipfiles if is_onefile else [],
+    a.datas if is_onefile else [],
     [],
-    exclude_binaries=True,
+    exclude_binaries=not is_onefile,
     name='korean-license-plate-detector',
     debug=False,
     bootloader_ignore_signals=False,
@@ -84,13 +90,15 @@ exe = EXE(
     entitlements_file=None,
 )
 
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='korean-license-plate-detector',
-)
+# Only create COLLECT for onedir builds (not onefile)
+if not is_onefile:
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        name='korean-license-plate-detector',
+    )
