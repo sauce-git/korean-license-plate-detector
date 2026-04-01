@@ -7,8 +7,8 @@ import sys
 def get_resource_path(relative_path):
     """Get path to resource, works in dev and PyInstaller bundle"""
     if getattr(sys, 'frozen', False):
-        return os.path.join(sys._MEIPASS, relative_path)
-    # Resources are in the same directory as this module (klpd/utils/)
+        return os.path.join(sys._MEIPASS, 'klpd', 'utils', relative_path)
+    # In development, resources are in the same directory as this module
     return os.path.join(os.path.dirname(__file__), relative_path)
 
 

@@ -17,7 +17,8 @@ cache_dir = os.environ.get('HF_MODEL_CACHE', '.cache')
 # Data files to include from src/
 datas = [
     ('src/klpd/ui/resources/form.ui', 'klpd/ui/resources'),
-    ('src/klpd/utils/data', 'klpd/utils/data'),
+    ('src/klpd/utils/data/kor_list.txt', 'klpd/utils/data'),
+    ('src/klpd/utils/data/plate_list.txt', 'klpd/utils/data'),
 ]
 
 # Include cached models if they exist
