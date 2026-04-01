@@ -211,11 +211,6 @@
     </item>
     <item>
      <widget class="QProgressBar" name="progressBar">
-      <property name="font">
-       <font>
-        <family>굴림</family>
-       </font>
-      </property>
       <property name="value">
        <number>0</number>
       </property>

@@ -5,21 +5,32 @@ import sys
 import cv2
 import numpy as np
 import onnxruntime as ort
+import logging
 from pathlib import Path
 
-# Debug mode
-DEBUG = os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes')
+# Limit threading to avoid issues with QThread in PyInstaller
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
 
-def debug_print(*args, **kwargs):
-    if DEBUG:
-        print("[DEBUG]", *args, **kwargs, file=sys.stderr, flush=True)
+# Setup logging - always set to INFO level to allow logs to propagate
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Debug mode and debug_print from common module
+from klpd.utils import debug_print, is_debug_enabled, info_print
+
+if is_debug_enabled():
+    logger.debug("DEBUG mode enabled")
 
 # Configuration from environment variables
 HF_MODEL_REPO = os.environ.get('HF_MODEL_REPO', 'sauce-hug/korean-license-plate-detector')
 HF_MODEL_CACHE = os.environ.get('HF_MODEL_CACHE', '.cache')
 
-debug_print(f"HF_MODEL_REPO: {HF_MODEL_REPO}")
-debug_print(f"HF_MODEL_CACHE: {HF_MODEL_CACHE}")
+logger.debug(f"HF_MODEL_REPO: {HF_MODEL_REPO}")
+logger.debug(f"HF_MODEL_CACHE: {HF_MODEL_CACHE}")
 
 MODEL_NAMES = ['plate_detect_v1', 'vertex_detect_v1', 'syllable_detect_v1']
 
@@ -39,7 +50,8 @@ def download_model_from_hf(model_name: str, cache_dir: Path) -> Path:
     model_path = hf_hub_download(
         repo_id=HF_MODEL_REPO,
         filename=model_filename,
-        local_dir=local_dir
+        local_dir=local_dir,
+        local_dir_use_symlinks=False  # Ensure actual files, not symlinks
     )
     return Path(model_path)
 
@@ -49,17 +61,24 @@ def get_model_path(model_name: str) -> Path:
     # Check bundled models (PyInstaller)
     if getattr(sys, 'frozen', False):
         bundled_model = Path(sys._MEIPASS) / 'models' / model_name / 'weights' / 'best.onnx'
+        logger.info(f"Checking bundled model: {bundled_model}")
+        logger.info(f"Exists: {bundled_model.exists()}")
         if bundled_model.exists():
+            logger.info(f"Using bundled model: {model_name}")
             return bundled_model
+        else:
+            logger.warning("Bundled model not found, will try cache/download")
 
     # Check cache
     cache_dir = get_cache_dir()
     cached_model = cache_dir / 'models' / model_name / 'weights' / 'best.onnx'
+    logger.info(f"Checking cache: {cached_model}")
     if cached_model.exists():
+        logger.info(f"Using cached model: {model_name}")
         return cached_model
 
     # Download from Hugging Face
-    print(f"Downloading {model_name} from {HF_MODEL_REPO}...")
+    logger.info(f"Downloading {model_name} from {HF_MODEL_REPO}...")
     return download_model_from_hf(model_name, cache_dir)
 
 
@@ -68,12 +87,26 @@ class ONNXModel:
 
     def __init__(self, model_path):
         self.model_path = str(model_path)
-        debug_print(f"Loading ONNX model from: {self.model_path}")
-        self.session = ort.InferenceSession(self.model_path, providers=['CPUExecutionProvider'])
-        self.input_name = self.session.get_inputs()[0].name
-        self.input_shape = self.session.get_inputs()[0].shape
-        self.input_size = self.input_shape[2] if len(self.input_shape) == 4 else 416
-        debug_print(f"Model input: {self.input_name}, shape: {self.input_shape}, size: {self.input_size}")
+        logger.info(f"Loading ONNX model from: {self.model_path}")
+        try:
+            # Set single-threaded execution to avoid issues with QThread in PyInstaller
+            so = ort.SessionOptions()
+            so.intra_op_num_threads = 1
+            so.inter_op_num_threads = 1
+            so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+
+            self.session = ort.InferenceSession(
+                self.model_path,
+                providers=['CPUExecutionProvider'],
+                sess_options=so
+            )
+            self.input_name = self.session.get_inputs()[0].name
+            self.input_shape = self.session.get_inputs()[0].shape
+            self.input_size = self.input_shape[2] if len(self.input_shape) == 4 else 416
+            logger.info(f"Model loaded: {self.input_name}, shape: {self.input_shape}")
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
     def preprocess(self, img):
         h, w = img.shape[:2]
@@ -228,6 +261,14 @@ class YOLOBox:
     def conf(self):
         return self._conf
 
+    def center_x(self):
+        """Get center x coordinate directly (for PyInstaller compatibility)"""
+        return float(self._xywh[0])
+
+    def center_y(self):
+        """Get center y coordinate directly (for PyInstaller compatibility)"""
+        return float(self._xywh[1])
+
 
 class ArrayWrapper:
     def __init__(self, data):
@@ -251,11 +292,11 @@ def load_model(model_name):
 
 def download_all_models():
     """Download all models from Hugging Face"""
-    print(f"Downloading models from {HF_MODEL_REPO}...")
+    logger.info(f"Downloading models from {HF_MODEL_REPO}...")
     for model_name in MODEL_NAMES:
         try:
             path = get_model_path(model_name)
-            print(f"  [OK] {model_name}")
+            logger.info(f"  [OK] {model_name}")
         except Exception as e:
-            print(f"  [FAIL] {model_name}: {e}")
-    print("Done!")
+            logger.error(f"  [FAIL] {model_name}: {e}")
+    logger.info("Done!")
