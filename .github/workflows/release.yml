@@ -21,8 +21,6 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-          - os: macos-latest
-            platform: macos
           - os: windows-latest
             platform: windows
 
@@ -48,13 +46,8 @@ jobs:
       - name: Build executable
         run: python -m PyInstaller korean-license-plate-detector.spec --noconfirm
 
-      - name: Apply ad-hoc signature (macOS)
-        if: matrix.platform == 'macos'
-        run: |
-          codesign --force --deep --sign - dist/korean-license-plate-detector/korean-license-plate-detector
-
-      - name: Create archive (Linux/macOS)
-        if: matrix.platform != 'windows'
+      - name: Create archive (Linux)
+        if: matrix.platform == 'linux'
         run: |
           cd dist
           tar -czvf korean-license-plate-detector-${{ matrix.platform }}.tar.gz korean-license-plate-detector/
