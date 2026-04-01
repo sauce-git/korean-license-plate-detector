@@ -64,6 +64,7 @@ if args.debug:
     logging.info("Debug mode enabled")
 
 from glob import glob
+import numpy as np
 import cv2
 from PySide6 import QtGui
 from PySide6.QtCore import QFile, QIODevice, QThread, QEventLoop, Qt, Signal
@@ -354,14 +355,17 @@ class MainWindow(QMainWindow):
         result = []
 
         for i, img_path in enumerate(img_list):
-            # Use logging instead of print for PyInstaller compatibility
             import logging
             logging.info(f"Processing: {img_path}")
 
             try:
-                img = cv2.imread(img_path)
+                # cv2.imread fails with non-ASCII paths on Windows, use imdecode instead
+                with open(img_path, 'rb') as f:
+                    img_array = np.frombuffer(f.read(), dtype=np.uint8)
+                img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
                 if img is None:
-                    logging.warning(f"Failed to read image: {img_path}")
+                    logging.warning(f"Failed to decode image: {img_path}")
                     result.append(None)
                     continue
 
