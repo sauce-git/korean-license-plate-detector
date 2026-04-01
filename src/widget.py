@@ -4,6 +4,17 @@
 import os
 import sys
 import argparse
+import logging
+from pathlib import Path
+
+# Setup logging - always log to file, console only in debug mode
+log_dir = Path.home() / '.korean-license-plate-detector'
+log_dir.mkdir(exist_ok=True)
+log_file = log_dir / 'app.log'
+
+# Ensure log file exists
+if not log_file.exists():
+    log_file.touch()
 
 # Parse debug argument FIRST before any other imports
 parser = argparse.ArgumentParser(add_help=False)
@@ -13,7 +24,44 @@ args, _ = parser.parse_known_args()
 # Set debug environment variable BEFORE importing other modules
 if args.debug:
     os.environ['DEBUG'] = '1'
-    print("[DEBUG] Debug mode enabled", file=sys.stderr, flush=True)
+
+# Create formatters
+file_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+console_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+
+# Create file handler - log INFO normally, DEBUG in debug mode
+file_handler = logging.FileHandler(log_file, encoding='utf-8')
+file_handler.setLevel(logging.DEBUG if args.debug else logging.INFO)
+file_handler.setFormatter(file_formatter)
+
+# Create console handler - use StreamHandler with level to control output
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.DEBUG if args.debug else logging.CRITICAL)
+console_handler.setFormatter(console_formatter)
+
+# Clear any existing handlers and configure root logger
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
+logging.root.setLevel(logging.DEBUG)  # Always allow DEBUG level
+logging.root.addHandler(file_handler)
+logging.root.addHandler(console_handler)
+
+# Configure utils loggers to ensure propagation
+utils_logger = logging.getLogger('utils')
+utils_logger.setLevel(logging.DEBUG)
+utils_logger.propagate = True
+
+detector_logger = logging.getLogger('detector')
+detector_logger.setLevel(logging.DEBUG)
+detector_logger.propagate = True
+
+# Log initialization message
+logging.info("=" * 50)
+logging.info("Application starting")
+logging.info(f"Log file: {log_file}")
+if args.debug:
+    logging.info("Debug mode enabled")
 
 from glob import glob
 import cv2
@@ -22,9 +70,10 @@ from PySide6.QtCore import QFile, QIODevice, QThread, QEventLoop, Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow
+from PySide6.QtGui import QAction
 from openpyxl.workbook import Workbook
 
-from detect import get_num
+from detector import get_num
 
 title = "Number Detector"
 
@@ -73,6 +122,7 @@ class MainWindow(QMainWindow):
         self.result = []
         self.worker = None
         self.window = window
+        self.debug_mode = args.debug  # Store debug mode state
 
         self.dir = None
         self.file = None
@@ -85,13 +135,108 @@ class MainWindow(QMainWindow):
         self.window.closeBtn.clicked.connect(self.close_app)
         self.local_event_loop = QEventLoop()
 
+        # Set the loaded widget as the central widget of MainWindow
+        self.setCentralWidget(window)
+
         window.setWindowTitle("")
 
         icon_path = get_resource_path('utils/icons/dobby.ico')
         app_icon = QtGui.QIcon(icon_path)
-        window.setWindowIcon(app_icon)
+        self.setWindowIcon(app_icon)
 
-        self.window.label.setText("경로를 선택해주세요")
+        # Set window size and make it fixed
+        self.resize(800, 600)
+        self.setFixedSize(800, 600)
+
+        # Add menu bar to MainWindow (not to the widget)
+        self.create_menu_bar()
+
+        # Show log file location for debugging
+        self.update_status_message()
+
+    def create_menu_bar(self):
+        """Create menu bar with settings"""
+        menu_bar = self.menuBar()
+
+        # Settings menu
+        settings_menu = menu_bar.addMenu("설정(Settings)")
+
+        # Debug mode toggle
+        self.debug_action = QAction("디버그 모드(Debug Mode)", self)
+        self.debug_action.setCheckable(True)
+        self.debug_action.setChecked(self.debug_mode)
+        self.debug_action.triggered.connect(self.toggle_debug_mode)
+        settings_menu.addAction(self.debug_action)
+
+        # View log file
+        view_log_action = QAction("로그 보기(View Log)", self)
+        view_log_action.triggered.connect(self.view_log_file)
+        settings_menu.addAction(view_log_action)
+
+        # Open log folder
+        open_log_folder_action = QAction("로그 폴더 열기(Open Log Folder)", self)
+        open_log_folder_action.triggered.connect(self.open_log_folder)
+        settings_menu.addAction(open_log_folder_action)
+
+    def toggle_debug_mode(self, checked):
+        """Toggle debug mode"""
+        self.debug_mode = checked
+
+        # Update debug state using the Debug singleton
+        from utils.debug import debug
+        debug.enabled = checked
+
+        # Update logging level for both file and console handlers
+        file_level = logging.DEBUG if checked else logging.INFO
+        console_level = logging.DEBUG if checked else logging.CRITICAL
+
+        for handler in logging.root.handlers:
+            if isinstance(handler, logging.FileHandler):
+                handler.setLevel(file_level)
+            elif isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
+                handler.setLevel(console_level)
+
+        if checked:
+            logging.info("Debug mode enabled")
+        else:
+            logging.info("Debug mode disabled")
+
+        self.update_status_message()
+
+    def view_log_file(self):
+        """Open log file with default text editor"""
+        import subprocess
+        import platform
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(str(log_file))
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', str(log_file)])
+            else:  # Linux
+                subprocess.run(['xdg-open', str(log_file)])
+        except Exception as e:
+            self.window.label.setText(f"로그 파일 열기 실패:\n{log_file}\n\n에러: {e}")
+
+    def open_log_folder(self):
+        """Open the folder containing log files"""
+        import subprocess
+        import platform
+        try:
+            if platform.system() == 'Windows':
+                subprocess.run(['explorer', str(log_dir)])
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', str(log_dir)])
+            else:  # Linux
+                subprocess.run(['xdg-open', str(log_dir)])
+        except Exception as e:
+            self.window.label.setText(f"로그 폴더 열기 실패:\n{log_dir}\n\n에러: {e}")
+
+    def update_status_message(self):
+        """Update status message based on debug mode"""
+        if self.debug_mode:
+            self.window.label.setText(f"DEBUG MODE\n\n로그 파일: {log_file}\n\n경로를 선택해주세요")
+        else:
+            self.window.label.setText("경로를 선택해주세요")
 
     def choose_dir(self):
         dir = QFileDialog.getExistingDirectory(self.window, "Select Directory")
@@ -220,6 +365,6 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     main_window = MainWindow(window)
-    window.show()
+    main_window.show()
 
     sys.exit(app.exec())

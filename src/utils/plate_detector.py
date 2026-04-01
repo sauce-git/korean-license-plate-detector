@@ -1,13 +1,6 @@
 # This file contains the class for detecting and cropping the license plate from the image
 
-import os
-import sys
-
-DEBUG = os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes')
-
-def debug_print(*args, **kwargs):
-    if DEBUG:
-        print("[DEBUG]", *args, **kwargs, file=sys.stderr, flush=True)
+from utils.debug import debug_print
 
 
 def crop_img(img, result):

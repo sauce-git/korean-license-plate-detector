@@ -1,15 +1,8 @@
 # This module is for detecting number in the image and returning the ordered number
 
-import os
-import sys
 import numpy as np
 from utils.data_loader import load_kor_list
-
-DEBUG = os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes')
-
-def debug_print(*args, **kwargs):
-    if DEBUG:
-        print("[DEBUG]", *args, **kwargs, file=sys.stderr, flush=True)
+from utils.debug import debug_print
 
 kor_list = load_kor_list()
 
